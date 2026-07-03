@@ -1,5 +1,4 @@
 const express = require('express');
-// Moderní importy pro firebase-admin v14+
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const dotenv = require('dotenv');
@@ -9,7 +8,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Bezpečné načtení a vyčištění privátního klíče
+// Načtení a vyčištění privátního klíče
 const privateKey = process.env.FIREBASE_PRIVATE_KEY
   ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/"/g, '')
   : undefined;
@@ -25,7 +24,7 @@ if (getApps().length === 0) {
   });
 }
 
-// Získání databáze moderním způsobem
+// Získání dat z databáze 
 const db = getFirestore();
 const collection = db.collection('inzeraty');
 
