@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bazar - Inzeráty</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Nástěnka inzerátů</h1>
+    </header>
+
+    <section class="form-section">
+      <h2 id="form-title">Přidat nový inzerát</h2>
+      <form id="inzerat-form">
+        <input type="hidden" id="edit-id">
+        <input type="text" id="title" placeholder="Název inzerátu" required>
+        <textarea id="description" placeholder="Popis nebo cena..." rows="3" required></textarea>
+        <div class="form-buttons">
+          <button type="submit" class="btn-primary" id="submit-btn">Zveřejnit inzerát</button>
+          <button type="button" class="btn-secondary hidden" id="cancel-btn">Zrušit úpravu</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="list-section">
+      <h2>Aktuální inzeráty</h2>
+      <div id="inzeraty-list" class="grid"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
