@@ -1,62 +1,61 @@
 const express = require('express');
-const admin = require('firebase-admin');
+// Moderní importy pro firebase-admin v14+
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 const dotenv = require('dotenv');
 
-// Načte klíče ze souboru .env (nebo z nastavení na Vercelu)
 dotenv.config();
 
 const app = express();
-// Umožní serveru číst data zaslaná z formuláře ve formátu JSON
 app.use(express.json());
 
-// Bezpečná inicializace Firebase pouze v případě, že ještě nebyla spuštěna
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
+// Bezpečné načtení a vyčištění privátního klíče
+const privateKey = process.env.FIREBASE_PRIVATE_KEY
+  ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n').replace(/"/g, '')
+  : undefined;
+
+// Zkontrolujeme pomocí moderní funkce getApps(), zda už aplikace nebyla spuštěna
+if (getApps().length === 0) {
+  initializeApp({
+    credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      // Nahrazuje znaky pro nové řádky, aby Vercel klíč správně přečetl:
-      privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
+      privateKey: privateKey,
     })
   });
 }
 
-const db = admin.firestore();
+// Získání databáze moderním způsobem
+const db = getFirestore();
 const collection = db.collection('inzeraty');
 
-// --- ENDPOINTY (Cesty API) ---
-
-// 1. ČTENÍ (GET /api/inzeraty) - pošle všechny inzeráty na web
+// NAČTENÍ INZERÁTŮ
 app.get('/api/inzeraty', async (req, res) => {
   try {
     const snapshot = await collection.get();
     const inzeraty = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(inzeraty);
   } catch (error) {
-    console.error("Chyba čtení:", error);
-    res.status(500).json({ error: 'Chyba při načítání z databáze' });
+    console.error("Chyba při GET:", error);
+    res.status(500).json({ error: 'Chyba při načítání databáze' });
   }
 });
 
-// 2. PŘIDÁNÍ (POST /api/inzeraty) - uloží nový inzerát z formuláře
+// PŘIDÁNÍ INZERÁTU
 app.post('/api/inzeraty', async (req, res) => {
   try {
     const { title, description } = req.body;
-    if (!title || !description) return res.status(400).json({ error: 'Chybí název nebo popis' });
+    if (!title || !description) return res.status(400).json({ error: 'Chybí data' });
 
-    const docRef = await collection.add({ 
-      title, 
-      description, 
-      createdAt: new Date().toISOString() 
-    });
+    const docRef = await collection.add({ title, description, createdAt: new Date().toISOString() });
     res.status(201).json({ id: docRef.id, title, description });
   } catch (error) {
-    console.error("Chyba ukládání:", error);
+    console.error("Chyba při POST:", error);
     res.status(500).json({ error: 'Chyba při ukládání' });
   }
 });
 
-// 3. ÚPRAVA (PUT /api/inzeraty/:id) - upraví existující inzerát podle ID
+// ÚPRAVA INZERÁTU
 app.put('/api/inzeraty/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -64,22 +63,21 @@ app.put('/api/inzeraty/:id', async (req, res) => {
     await collection.doc(id).update({ title, description });
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Chyba úpravy:", error);
+    console.error("Chyba při PUT:", error);
     res.status(500).json({ error: 'Chyba při úpravě' });
   }
 });
 
-// 4. MAZÁNÍ (DELETE /api/inzeraty/:id) - smaže inzerát podle ID
+// SMAZÁNÍ INZERÁTU
 app.delete('/api/inzeraty/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await collection.doc(id).delete();
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Chyba mazání:", error);
+    console.error("Chyba při DELETE:", error);
     res.status(500).json({ error: 'Chyba při mazání' });
   }
 });
 
-// Export pro Vercel (nespouštíme zde app.listen jako u běžného Node.js)
 module.exports = app;
